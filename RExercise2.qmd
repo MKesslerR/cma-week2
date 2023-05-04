@@ -80,10 +80,12 @@ The sampling interval varied greatly.
 Were all individuals tracked concurrently or sequentially?
 
 ```{r}
+# Seperate data for each day and plot it
 wildschwein_BE |> 
-  filter(DatetimeUTC == 2014-11-07)|> 
-  ggplot(aes(DatetimeUTC), colour = TierName)+
-  geom_point()
+  filter(DatetimeUTC < "2014-08-24") |> 
+  ggplot(aes(DatetimeUTC, timelag, colour = TierName))+
+  geom_point()+
+  geom_line()
 
 ```
 #Task3. Deriving movement parameters I: Speed (m/s)
@@ -188,3 +190,28 @@ ggplot(caro, aes(E, N))+
   geom_path(data= caro_9, aes(color="9 mins"))+
   labs(title = "Comparing original with 9 mins-resampled data") 
 ```
+#Task7
+
+```{r}
+library(sf)
+posmo_K <- read_delim("Data/posmo_data.csv", ",")#Import data
+colnames(posmo_K)
+st_crs(posmo_K)#to check if a coordinate system has been assigned. No! but it is WGS84: EPSG:4326
+
+posmo_K <- st_as_sf(posmo_K,
+    coords = c("lon_x", "lat_y"),
+    crs = 4326
+)#transforms the data frame into a sf object
+
+posmo_K
+
+posmo_K <- st_transform(posmo_K, 2056)#convert the coordinate system to CH1903+ LV95: EPSG:2056
+
+ggplot(posmo_K, aes(lon_x, lat_y))+
+  geom_path(color= "darkblue")
+
+
+
+
+```
+

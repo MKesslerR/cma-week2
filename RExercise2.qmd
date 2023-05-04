@@ -2,3 +2,86 @@
 title: "Untitled"
 format: html
 ---
+
+```{r}
+library(readr)
+library(sf)
+library(dplyr)
+library(ggplot2)
+```
+
+#Task1. Import data
+
+```{r}
+wildschwein_BE <- read_delim("wildschwein_BE_2056.csv", ",")#Load data.
+
+
+wildschwein_BE <- st_as_sf(wildschwein_BE, coords = c("E", "N"), crs = 2056, remove = FALSE)#convert to an sf object, remove=FALSE keeps both coordinate columns (E,N)
+wildschwein_BE
+```
+#Task2: Getting an overview of the data
+```{r}
+
+wildschwein_BE <- wildschwein_BE |> # Take wildschwein Data frame
+    group_by(TierName)|> # ...group it by TierName
+    mutate(timelag = as.numeric(difftime(lead(DatetimeUTC), DatetimeUTC)), units = "secs")#create a new column timelag (mutate) by calculating the time difference between consecutive rows (difftime) in the same individual and coerces the new column as numeric (as.numeric)
+
+wildschwein_BE
+
+```
+
+How many individuals were tracked? Three individuals were tracked
+
+```{r}
+unique(wildschwein_BE$TierName)
+#[1] "Sabi" "Rosa" "Ruth"
+#or
+unique(wildschwein_BE$TierID)
+#[1] "002A" "016A" "018A"
+```
+
+For how long were the individual tracked?
+
+```{r}
+wildschwein_BE |>               #1)use this data frame
+  group_by(TierName) |>        #2) group by individual
+  summarise(
+     DateTime_min = min(DatetimeUTC, na.rm = TRUE),
+    DateTime_max = max(DatetimeUTC, na.rm = TRUE) #3) Calculate the minimum  
+     #4) Calculate the maximum 
+    )   
+```
+
+TierName DateTime_min        DateTime_max       
+  <chr>    <dttm>              <dttm>             
+1 Rosa     2014-11-07 07:45:44 2015-06-29 23:45:11
+2 Ruth     2014-11-07 18:00:43 2015-07-27 09:45:15
+3 Sabi     2014-08-22 21:00:12 2015-07-27 11:00:14
+
+Are there gaps? No gaps 
+
+```{r}
+ggplot(wildschwein_BE, aes(DatetimeUTC, TierName))+
+  geom_point()
+```
+What is the temporal sampling interval between the locations?
+
+```{r}
+summary(wildschwein_BE$timelag)
+hist(wildschwein_BE$timelag/60)# per minute
+```
+
+The sampling interval varied greatly. 
+
+ Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+     12     896     903    1408     916   60367       3
+
+Were all individuals tracked concurrently or sequentially?
+
+```{r}
+wildschwein_BE |> 
+  filter(DatetimeUTC == 2014-11-07)|> 
+  ggplot(aes(DatetimeUTC), colour = TierName)+
+  geom_point()
+
+```
